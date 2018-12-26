@@ -4,4 +4,4 @@ RUN pip install uwsgi
 
 EXPOSE 4000
 
-CMD ['uwsgi', '--http-socket', '4000', '--manage-script-name', '--mount', '/=app:app']
+CMD uwsgi --socket 0.0.0.0:4000 --manage-script-name --mount /=app:app

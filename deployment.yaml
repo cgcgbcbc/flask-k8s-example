@@ -19,12 +19,15 @@ kind: ConfigMap
 metadata:
   name: nginx-config
 data:
-  config: |
+  default.conf: |
+    upstream backend {
+        server 127.0.0.1:4000;
+    }
     server {
         listen       80 default;
         location / {
           include uwsgi_params;
-          uwsgi_pass http://127.0.0.1:4000;
+          uwsgi_pass backend;
         }
     }
 ---
@@ -32,7 +35,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    service: nginx
+    service: flask-example
   name: nginx
 spec:
   replicas: 1
@@ -40,7 +43,7 @@ spec:
   template:
     metadata:
       labels:
-        service: nginx
+        service: flask-example
     spec:
       containers:
       - image: nginx
@@ -48,15 +51,17 @@ spec:
         ports:
         - containerPort: 80
         resources: {}
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
       - image: backend
+        imagePullPolicy: IfNotPresent
         name: backend
         resources: {}
       restartPolicy: Always
       volumes:
-        - name: config-volume
+        - name: nginx-config
           configMap:
             name: nginx-config
-            items:
-              - key: config
-                path: /etc/nginx/conf.d/default.conf
 status: {}

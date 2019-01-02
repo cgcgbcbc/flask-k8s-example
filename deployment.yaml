@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: flask-example
+  name: flask-example
+spec:
+  ports:
+  - name: "80"
+    port: 80
+    targetPort: 80
+  selector:
+    service: flask-example
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  config: |
+    server {
+        listen       80 default;
+        location / {
+          include uwsgi_params;
+          uwsgi_pass http://127.0.0.1:4000;
+        }
+    }
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    service: nginx
+  name: nginx
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: nginx
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+        resources: {}
+      - image: backend
+        name: backend
+        resources: {}
+      restartPolicy: Always
+      volumes:
+        - name: config-volume
+          configMap:
+            name: nginx-config
+            items:
+              - key: config
+                path: /etc/nginx/conf.d/default.conf
+status: {}
